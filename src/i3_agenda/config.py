@@ -113,3 +113,13 @@ parser.add_argument(
     action="store_true",
     help="print the time remaining before the next event starts (event_name in 22m) instead of (12:00 event_name)",
 )
+parser.add_argument(
+    "--search-zoom-link",
+    action="store_true",
+    help="search for zoom links in the event description or location, convert them to openable links, used by the -o flag",
+)
+parser.add_argument(
+    '--open-link',
+    action='store_true',
+    help='open the event link in the browser'
+)

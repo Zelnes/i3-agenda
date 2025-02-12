@@ -1,6 +1,8 @@
 from __future__ import print_function
 
 import subprocess
+import re
+import bs4
 from i3_agenda import config
 
 from typing import List, Optional
@@ -64,6 +66,38 @@ def load_events(args) -> List[Event]:
         save_cache(events)
     return events
 
+def extract_zoom_link(event: Event) -> Optional[str]:
+    """
+    Extracts the Zoom link from the event.
+    Searches in the location first, then in the description.
+
+    This function only handles Zoom links.
+    """
+
+    def is_zoom_url_and_converted(url: str) -> bool:
+        if "https://us02web.zoom.us/j/" in url:
+            split = re.split('[/?=]', url)
+            meeting_id = split[-3]
+            password = split[-1]
+            return f"zoommtg://zoom.us/join?action=join&confno={meeting_id}&pwd={password}"
+        return None
+
+    link = is_zoom_url_and_converted(event.location)
+
+    if link is not None:
+        return link
+
+    parsed_html = bs4.BeautifulSoup(event.description, "html.parser")
+
+    for item in parsed_html.find_all("br"):
+        next = item.next_sibling
+        if type(next) is bs4.element.NavigableString:
+            link = is_zoom_url_and_converted(next)
+            if link is not None:
+                return link
+    else:
+        return None
+
 
 def main():
     args = config.parser.parse_args()
@@ -86,14 +120,22 @@ def main():
 
     button_action(config.button, closest)
 
-    print(
-        closest.get_string(
-            args.limchar,
-            args.date_format,
-            args.ongoing_time_left,
-            args.next_event_time_left,
+    if args.open_link:
+        if args.search_zoom_link:
+            link = extract_zoom_link(closest)
+        if link is None:
+            link = closest.location
+
+        run_open(link)
+    else:
+        print(
+            closest.get_string(
+                args.limchar,
+                args.date_format,
+                args.ongoing_time_left,
+                args.next_event_time_left,
+            )
         )
-    )
 
     if closest.is_urgent():
         # special i3blocks exit code to set the block urgent
