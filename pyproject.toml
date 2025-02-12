@@ -31,3 +31,7 @@ url = "https://github.com/rosenpin/i3-agenda"
 author = "Tomer Rosenfeld"
 author_email = "mail@tomerrosenfeld.com"
 
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["*"]
