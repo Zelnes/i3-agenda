@@ -17,15 +17,20 @@ from i3_agenda.const import (
 DEFAULT_CAL_WEBPAGE = "https://calendar.google.com/calendar/r/day"
 
 
+def run_open(link: str):
+    if link:
+        print(f"Opening link: {link}")
+        subprocess.Popen(["xdg-open", link])
+    else:
+        print("No link to open")
+
 def button_action(button_code: str, closest: Event):
     if button_code != "":
         if button_code == LEFT_MOUSE_BUTTON:
-            print("Opening calendar page...")
-            subprocess.Popen(["xdg-open", DEFAULT_CAL_WEBPAGE])
+            run_open(DEFAULT_CAL_WEBPAGE)
         elif button_code == RIGHT_MOUSE_BUTTON:
             if closest.location:
-                print("Opening location link...")
-                subprocess.Popen(["xdg-open", closest.location])
+                run_open(closest.location)
 
 
 def filter_only_todays_events(events: List[Event]) -> Optional[List[Event]]:
