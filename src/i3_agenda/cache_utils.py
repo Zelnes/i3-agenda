@@ -46,6 +46,7 @@ def get_events_from_cache(f: TextIO):
                     event["start_time"],
                     event["end_time"],
                     event["location"],
+                    event["description"],
                 )
             )
         except KeyError:

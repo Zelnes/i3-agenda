@@ -29,6 +29,7 @@ class Event:
     start_time: int
     end_time: int
     location: Union[str, None]
+    description: str
 
     def get_datetime(self) -> dt.datetime:
         return dt.datetime.fromtimestamp(self.start_time)
@@ -190,5 +191,5 @@ def from_json(event_json: Dict[str, Any]) -> Event:
         matches = re.findall(URL_REGEX, event_json["description"])
         location = matches[0][0] if matches else None
     return Event(
-        event_json.get("summary", "(No title)"), start_time, end_time, location
+        event_json.get("summary", "(No title)"), start_time, end_time, location, event_json.get("description", "")
     )
