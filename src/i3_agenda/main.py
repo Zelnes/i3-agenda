@@ -75,7 +75,7 @@ def extract_zoom_link(event: Event) -> Optional[str]:
     """
 
     def is_zoom_url_and_converted(url: str) -> bool:
-        if "https://us02web.zoom.us/j/" in url:
+        if url and "https://us02web.zoom.us/j/" in url:
             split = re.split('[/?=]', url)
             meeting_id = split[-3]
             password = split[-1]
