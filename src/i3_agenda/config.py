@@ -108,6 +108,19 @@ parser.add_argument(
     help="print time left instead of the end time for ongoing events (22m left) instead of (ends 12:00)",
 )
 parser.add_argument(
+    "--format",
+    default='i3blocks',
+    const='i3blocks',
+    nargs='?',
+    choices=['i3blocks', 'waybar'],
+    help="format of the output, 'i3blocks' for i3blocks, 'waybar' for waybar",
+)
+parser.add_argument(
+    "--print-all",
+    action="store_true",
+    help="print all events, instead of just the closest one",
+)
+parser.add_argument(
     "--next-event-time-left",
     "-n",
     action="store_true",

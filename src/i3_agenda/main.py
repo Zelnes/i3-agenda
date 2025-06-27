@@ -1,5 +1,9 @@
 from __future__ import print_function
 
+import csv
+import json
+import sys
+
 import subprocess
 import re
 import bs4
@@ -74,7 +78,7 @@ def extract_zoom_link(event: Event) -> Optional[str]:
     This function only handles Zoom links.
     """
 
-    def is_zoom_url_and_converted(url: str) -> bool:
+    def is_zoom_url_and_converted(url: str | None) -> str | None:
         if url and "https://us02web.zoom.us/j/" in url:
             split = re.split('[/?=]', url)
             meeting_id = split[-3]
@@ -98,16 +102,39 @@ def extract_zoom_link(event: Event) -> Optional[str]:
     else:
         return None
 
+def event_str(event: Event, args):
+    return event.get_string(
+        args.limchar,
+        args.date_format,
+        args.ongoing_time_left,
+        args.next_event_time_left,
+    )
+
+def print_all(events: List[Event], args):
+    if args.format == 'i3blocks':
+        for event in events:
+            print(event_str(event, args))
+    elif args.format == 'waybar':
+        print(
+            json.dumps({
+                "text": event_str(events[0], args),
+                "tooltip": "\n".join(event_str(e, args) for e in events[1:]),
+            })
+        )
 
 def main():
     args = config.parser.parse_args()
     config.CONF_DIR = args.conf
 
-    events = load_events(args)
+    events = sort_events(load_events(args))
 
     events = get_future_events(
         events, args.hide_event_after, args.show_event_before
     )
+
+    if args.print_all:
+        print_all(events, args)
+        return
 
     if args.skip > 0:
         events = sort_events(events)
