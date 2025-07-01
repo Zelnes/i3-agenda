@@ -23,7 +23,7 @@ from i3_agenda.const import (
 DEFAULT_CAL_WEBPAGE = "https://calendar.google.com/calendar/r/day"
 
 
-def run_open(link: str):
+def run_open(link: str | None):
     if link:
         print(f"Opening link: {link}")
         subprocess.Popen(["xdg-open", link])
@@ -115,12 +115,15 @@ def print_all(events: List[Event], args):
         for event in events:
             print(event_str(event, args))
     elif args.format == 'waybar':
-        print(
-            json.dumps({
-                "text": event_str(events[0], args),
-                "tooltip": "\n".join(event_str(e, args) for e in events[1:]),
-            })
-        )
+        if not events:
+            print(json.dumps({"text": args.no_event_text}))
+        else:
+            print(
+                json.dumps({
+                    "text": f"  {event_str(events[0], args)}",
+                    "tooltip": "\n".join(event_str(e, args) for e in events[1:]),
+                })
+            )
 
 def main():
     args = config.parser.parse_args()
@@ -148,6 +151,8 @@ def main():
     button_action(config.button, closest)
 
     if args.open_link:
+        link = None
+        print(closest)
         if args.search_zoom_link:
             link = extract_zoom_link(closest)
         if link is None:

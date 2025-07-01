@@ -185,7 +185,9 @@ def from_json(event_json: Dict[str, Any]) -> Event:
 
     location = None
 
-    if "location" in event_json:
+    if "hangoutLink" in event_json:
+        location = event_json["hangoutLink"]
+    elif "location" in event_json:
         location = event_json["location"]
     elif "description" in event_json:
         matches = re.findall(URL_REGEX, event_json["description"])
