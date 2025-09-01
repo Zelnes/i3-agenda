@@ -14,6 +14,8 @@ import datetime
 
 from i3_agenda.event import Event, get_closest, sort_events, get_future_events
 
+from markupsafe import escape
+
 from typing import Union
 from i3_agenda.const import (
     LEFT_MOUSE_BUTTON,
@@ -120,7 +122,7 @@ def print_all(events: List[Event], args):
         else:
             print(
                 json.dumps({
-                    "text": f"  {event_str(events[0], args)}",
+                    "text": f"  {escape(event_str(events[0], args))}",
                     "tooltip": "\n".join(event_str(e, args) for e in events[1:]),
                 })
             )
