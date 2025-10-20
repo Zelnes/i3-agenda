@@ -4,4 +4,3 @@ freezegun
 pytest-cov
 black
 isort
-beautifulsoup4

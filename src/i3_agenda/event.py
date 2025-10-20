@@ -30,6 +30,7 @@ class Event:
     end_time: int
     location: Union[str, None]
     description: str
+    response_status: Union[str, None] = None  # needsAction, declined, tentative, accepted
 
     def get_datetime(self) -> dt.datetime:
         return dt.datetime.fromtimestamp(self.start_time)
@@ -47,6 +48,16 @@ class Event:
         event_datetime = self.get_datetime()
 
         result = self.summary
+
+        # Add status icon prefix
+        status_icon = ""
+        if self.response_status == "needsAction":
+            status_icon = "? "  # Question mark for unaccepted
+        elif self.response_status == "tentative":
+            status_icon = "~ "  # Tilde for tentative
+
+        result = status_icon + result
+
         trimmed = ""
         if MIN_CHARS < limit_char < len(result):
             trimmed = "".join([c for c in result][:limit_char])
@@ -114,6 +125,22 @@ class Event:
             and self.get_end_datetime().time() == dt.time(0)
             and time_delta % SECONDS_PER_DAY == 0
         )
+
+    def is_declined(self) -> bool:
+        """Check if the user has declined this event"""
+        return self.response_status == "declined"
+
+    def is_needs_action(self) -> bool:
+        """Check if the user hasn't responded to this event"""
+        return self.response_status == "needsAction"
+
+    def is_tentative(self) -> bool:
+        """Check if the user has tentatively accepted this event"""
+        return self.response_status == "tentative"
+
+    def is_accepted(self) -> bool:
+        """Check if the user has accepted this event"""
+        return self.response_status == "accepted"
 
 
 class EventEncoder(json.JSONEncoder):
@@ -192,6 +219,15 @@ def from_json(event_json: Dict[str, Any]) -> Event:
     elif "description" in event_json:
         matches = re.findall(URL_REGEX, event_json["description"])
         location = matches[0][0] if matches else None
+    # Extract user's response status from attendees
+    response_status = None
+    if "attendees" in event_json:
+        # Find the current user in the attendee list (marked with "self": true)
+        for attendee in event_json["attendees"]:
+            if attendee.get("self", False):
+                response_status = attendee.get("responseStatus")
+                break
+
     return Event(
-        event_json.get("summary", "(No title)"), start_time, end_time, location, event_json.get("description", "")
+        event_json.get("summary", "(No title)"), start_time, end_time, location, event_json.get("description", ""), response_status
     )

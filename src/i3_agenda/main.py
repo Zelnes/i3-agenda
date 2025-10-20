@@ -112,18 +112,94 @@ def event_str(event: Event, args):
         args.next_event_time_left,
     )
 
+def is_all_day_event(event: Event) -> bool:
+    """
+    Determine if an event should be considered an all-day event for display purposes.
+    Returns True for:
+    1. All-day events
+    2. Long meetings (>3 hours) without Google Meet links
+    """
+    # Check if it's an all-day event
+    if event.is_allday():
+        return True
+
+    # Check if it's a long meeting (>3 hours) without Google Meet link
+    duration_hours = (event.end_time - event.start_time) / 3600  # Convert seconds to hours
+    print(f"Event '{event.summary}' duration: {duration_hours} hours", file=sys.stderr)
+    return duration_hours > 3
+    if duration_hours > 3:
+        # Check if it has a Google Meet link (hangoutLink would be in location)
+        has_google_meet = event.location and "meet.google.com" in event.location
+        if not has_google_meet:
+            return True
+
+    return False
+
+def format_allday_events_section(allday_events: List[Event], args) -> str:
+    """
+    Format all-day events with a header and line separator.
+    """
+    if not allday_events:
+        return ""
+
+    formatted_events = []
+    formatted_events.append("All day events")
+    formatted_events.append("─" * 15)  # Unicode line separator
+
+    for event in allday_events:
+        # For all-day events, show just the name and date info
+        event_line = event_str(event, args)
+        formatted_events.append(event_line)
+
+    return "\n".join(formatted_events)
+
 def print_all(events: List[Event], args):
     if args.format == 'i3blocks':
-        for event in events:
+        # Filter out declined events
+        accepted_events = [event for event in events if not event.is_declined()]
+        for event in accepted_events:
             print(event_str(event, args))
     elif args.format == 'waybar':
-        if not events:
+        # Filter out declined events first
+        accepted_events = [event for event in events if not event.is_declined()]
+
+        # Separate regular events from all-day events
+        regular_events = [event for event in accepted_events if not is_all_day_event(event)]
+        allday_events = [event for event in accepted_events if is_all_day_event(event)]
+
+        if not accepted_events:
             print(json.dumps({"text": args.no_event_text}))
-        else:
+        elif not regular_events:
+            # Only all-day events exist, show count in main text
+            count = len(allday_events)
+            event_word = "event" if count == 1 else "events"
+            allday_section = format_allday_events_section(allday_events, args)
             print(
                 json.dumps({
-                    "text": f"  {escape(event_str(events[0], args))}",
-                    "tooltip": "\n".join(event_str(e, args) for e in events[1:]),
+                    "text": f"{count} all-day {event_word}",
+                    "tooltip": allday_section,
+                })
+            )
+        else:
+            # Show regular events with first one as main text, rest + all-day events in tooltip
+            tooltip_parts = []
+
+            # Add remaining regular events to tooltip
+            if len(regular_events) > 1:
+                tooltip_parts.extend(event_str(e, args) for e in regular_events[1:])
+
+            # Add all-day events section at the end if any exist
+            allday_section = format_allday_events_section(allday_events, args)
+            if allday_section:
+                # Add separator between regular and all-day events if there are regular events in tooltip
+                if tooltip_parts:
+                    tooltip_parts.append("")  # Empty line for separation
+                tooltip_parts.append(allday_section)
+
+            print(
+                json.dumps({
+                    "text": f"  {escape(event_str(regular_events[0], args))}",
+                    "tooltip": "\n".join(tooltip_parts),
                 })
             )
 
